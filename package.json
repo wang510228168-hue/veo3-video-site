@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@fortawesome/fontawesome-free": "6.7.2",
     "@fortawesome/fontawesome-svg-core": "6.7.2",
