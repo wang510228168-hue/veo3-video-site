@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Video with Google Veo-3</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#0b0b0d; color:#eee; }
+    .wrap { max-width: 860px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    p  { color:#bbb; margin: 0 0 18px; }
+    label { font-size: 14px; color:#bbb; display:block; margin-top: 10px;}
+    textarea, select, input[type="file"] {
+      width:100%; background:#111216; color:#fff; border:1px solid #34353a; border-radius:10px; padding:10px;
+    }
+    .row { display:flex; gap:12px; flex-wrap:wrap; margin: 10px 0; }
+    .card { background:#111216; border:1px solid #34353a; border-radius:14px; padding:16px; }
+    .btn {
+      appearance:none; border:0; border-radius:12px; padding:12px 18px; font-weight:800;
+      background:#ff7a59; color:#111; cursor:pointer;
+    }
+    .btn[disabled]{ background:#999; cursor:not-allowed; color:#222; }
+    .note { color:#9aa0a6; margin-top: 8px; }
+    video { width:100%; border-radius:12px; margin-top: 12px; }
+    .pill { display:inline-block; background:#17181c; border:1px solid #2e2f35; padding:8px 10px; border-radius:999px; color:#d0d2d6; }
+    .muted { color:#9aa0a6; }
+    .radio { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .footer { margin: 40px 0 12px; color:#666; font-size: 13px; text-align:center; }
+    .hero { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>Create Video with Google Veo‑3</h1>
+        <p>Two options (Premium & Fast) + Image‑to‑Video. Free demo is on by default.</p>
+      </div>
+      <div class="pill">Demo Mode: <strong>ON</strong></div>
+    </div>
+
+    <div class="card">
+      <label>Prompt (what to generate)</label>
+      <textarea id="prompt" rows="4" placeholder="Cinematic beach at sunset, soft waves, slow dolly-in..."></textarea>
+
+      <div class="row">
+        <div class="radio">
+          <label><input type="radio" name="model" value="veo3" checked> Veo‑3 (Premium 3–5m)</label>
+          <label><input type="radio" name="model" value="veo3-fast"> Veo‑3 Fast (2–3m)</label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1 1 200px">
+          <label>Camera</label>
+          <select id="camera">
+            <option>Static</option>
+            <option selected>Panning</option>
+            <option>Dolly</option>
+            <option>Drone/Aerial</option>
+          </select>
+        </div>
+        <div style="flex:1 1 200px">
+          <label>Style</label>
+          <select id="style">
+            <option>Cinematic</option>
+            <option>Realistic</option>
+            <option>3D</option>
+            <option>Anime</option>
+            <option>Dreamy</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Image (optional, for Image‑to‑Video)</label>
+      <input id="image" type="file" accept="image/*"/>
+
+      <div class="row" style="align-items:center; justify-content:space-between">
+        <button id="go" class="btn">Generate Video</button>
+        <span class="muted">Processing may take ~2–5 minutes</span>
+      </div>
+      <div id="msg" class="note"></div>
+
+      <video id="out" controls style="display:none"></video>
+    </div>
+
+    <p class="footer">© 2025 YourBrand · Powered by Google Vertex AI (Veo‑3) · Demo uses sample video</p>
+  </div>
+
+<script>
+const API_URL = "/api/generate-video";
+
+async function fileToBase64(file){
+  const buf = await file.arrayBuffer();
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  return `data:${file.type};base64,${b64}`;
+}
+
+document.getElementById('go').addEventListener('click', async () => {
+  const msg = document.getElementById('msg');
+  const out = document.getElementById('out');
+
+  const prompt = document.getElementById('prompt').value.trim();
+  const model  = document.querySelector('input[name="model"]:checked').value;
+  const camera = document.getElementById('camera').value;
+  const style  = document.getElementById('style').value;
+
+  let imageDataUrl = null;
+  const imgFile = document.getElementById('image').files[0];
+  if (imgFile) imageDataUrl = await fileToBase64(imgFile);
+
+  if(!prompt && !imageDataUrl){
+    msg.textContent = 'Please enter a prompt or upload an image 😊';
+    return;
+  }
+
+  msg.textContent = 'Processing… this usually takes 2–5 minutes ⏳';
+  out.style.display = 'none';
+  out.removeAttribute('src');
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ prompt, model, camera, style, imageDataUrl })
+    });
+    if(!res.ok){
+      const err = await res.text();
+      throw new Error(err || 'Request failed');
+    }
+    const data = await res.json();
+    if (data.videoUrl){
+      msg.textContent = 'Done! 🎬';
+      out.src = data.videoUrl;
+      out.style.display = 'block';
+      out.load();
+    } else {
+      msg.textContent = 'Finished, but no videoUrl returned 🤔';
+    }
+  } catch(e){
+    console.error(e);
+    msg.textContent = 'Error: ' + (e.message || 'Something went wrong');
+  }
+});
+</script>
+</body>
+</html>
