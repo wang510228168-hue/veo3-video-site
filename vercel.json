@@ -1,7 +1,9 @@
 {
   "version": 2,
   "functions": {
-    "api/**/*.js": {}
+    "api/**/*.js": {
+      "maxDuration": 10
+    }
   },
   "buildCommand": "",
   "outputDirectory": "."
